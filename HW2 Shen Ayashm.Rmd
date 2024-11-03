@@ -11,22 +11,46 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
+# Question 1
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+A permutation test is a non-parametric statistical test used to determine whether two distributions are significantly different from each other. It works by assessing the null hypothesis that two groups come from the same distribution.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+## Explanation of `median.test` Algorithm
 
-```{r cars}
-summary(cars)
+The `median.test` function performs a permutation test to compare the medians of two samples, `x` and `y`. It first calculates the observed difference in medians. The combined data from both groups is shuffled for each of 1,000 permutations, splitting it back into two groups of the original sizes. The function computes the permuted difference in medians and counts how often this value is as extreme as the observed one. The p-value is determined as the proportion of these extreme cases relative to the total number of permutations, indicating the significance of the observed median difference.
+
+
+
+```{r}
+#Question 1
+
+# function of median.test(x,y)
+
+median.test <- function(x, y){
+  # Check is the inputs are vector or not.
+  stopifnot("the input of function should be a vector" = is.vector(x))
+  stopifnot("the input of function should be a vector" = is.vector(y))
+  
+  # Calculate observed statistic
+  observed_stat <- median(x) - median(y)
+  
+  # Combine data for permutation
+  combine <- c(x, y)
+  
+  num_permutations  = 1000
+  extreme_count = 0
+  
+  # Permutation test loop
+  for (i in 1:num_permutations){
+    shuffle <- sample(combine)
+    perm_stat <- median(head(shuffle,length(x))) - median(tail(shuffle,length(y)))
+    if (abs(perm_stat) >= abs(observed_stat)){
+      extreme_count <- extreme_count + 1
+    }
+  }
+  
+  # Calculate p-value
+  p_value <-  extreme_count / num_permutations
+  return(p_value)
+}
 ```
-
-## Including Plots
-
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
-```
-
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
