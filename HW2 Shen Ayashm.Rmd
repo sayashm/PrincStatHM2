@@ -11,22 +11,21 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# Question 1
+# Question 1:
 
 A permutation test is a non-parametric statistical test used to determine whether two distributions are significantly different from each other. It works by assessing the null hypothesis that two groups come from the same distribution.
 
+
 ## Explanation of `median.test` Algorithm
 
-The `median.test` function performs a permutation test to compare the medians of two samples, `x` and `y`. It first calculates the observed difference in medians. The combined data from both groups is shuffled for each of 1,000 permutations, splitting it back into two groups of the original sizes. The function computes the permuted difference in medians and counts how often this value is as extreme as the observed one. The p-value is determined as the proportion of these extreme cases relative to the total number of permutations, indicating the significance of the observed median difference.
-
-
+The `median.test` function helps determine if the medians of two sample groups are meaningfully different. It starts by finding the actual median difference between the groups. Next, it combines all the data and shuffles it a set number of times (1,000 by default). For each shuffle, it splits the data back into two new groups, calculates the new median difference, and counts how often this difference is as extreme as the original one. The function then calculates the p-value by comparing these counts to the total number of shuffles, showing how likely the observed difference could have happened by chance. Users can adjust the number of shuffles to make the test more or less precise.
 
 ```{r}
 #Question 1
 
 # function of median.test(x,y)
 
-median.test <- function(x, y){
+median.test <- function(x, y, n = 1000){
   # Check is the inputs are vector or not.
   stopifnot("the input of function should be a vector" = is.vector(x))
   stopifnot("the input of function should be a vector" = is.vector(y))
@@ -37,11 +36,10 @@ median.test <- function(x, y){
   # Combine data for permutation
   combine <- c(x, y)
   
-  num_permutations  = 1000
   extreme_count = 0
   
   # Permutation test loop
-  for (i in 1:num_permutations){
+  for (i in 1:n){
     shuffle <- sample(combine)
     perm_stat <- median(head(shuffle,length(x))) - median(tail(shuffle,length(y)))
     if (abs(perm_stat) >= abs(observed_stat)){
@@ -50,7 +48,63 @@ median.test <- function(x, y){
   }
   
   # Calculate p-value
-  p_value <-  extreme_count / num_permutations
+  p_value <-  extreme_count / n
   return(p_value)
 }
 ```
+
+# Question 2:
+To compare how well different statistical tests perform (the permutation t-test, the Wilcoxon–Mann–Whitney test, and our custom median test), we start by setting up the necessary components. We create empty vectors (`p.t`, `p.wmw`, and `p.median`) to store the p-values from each test across 1,000 simulated runs. We set `n = 20` as the sample size for each group and use `delta = sqrt(3)/2` to shift one of the groups, creating a controlled difference to test the power of each method.
+
+
+```{r echo = FALSE, message=FALSE}
+# Load the 'coin' package for permutation tests
+library('coin')
+
+# Initialize vectors to store p-values for each test
+p.t <- p.wmw <- p.median <- c()
+
+# Set sample size and effect size (delta) for simulations
+n <- 20
+delta <- sqrt(3)/2
+
+# Run 1,000 simulations to compare test performance
+for (i in 1:1000) {
+  # Generate two samples from the t-distribution, one shifted by delta
+  Y1 <- rt(n, 3)
+  Y2 <- rt(n, 3) + delta
+  
+  # Create a group indicator and combine samples
+  X <- factor(c(rep("A", n), rep("B", n)))
+  Y <- c(Y1, Y2)
+  
+  # Compute p-values for each test
+  p.t[i] <- pvalue(oneway_test(Y ~ X, distribution = approximate(nresample = 9999)))
+  p.wmw[i] <- wilcox.test(Y1, Y2, exact = TRUE)$p.value
+  p.median[i] <- median.test(Y1, Y2, n)
+}
+```
+
+In each of the 1,000 simulations, we generate two sets of data, `Y1` and `Y2`, from a \( t_3 \)-distribution, with `Y2` shifted by `delta` to simulate a real difference between the groups. For each run:
+- **Permutation t-test**: We use the `oneway_test()` function to get the p-value.
+- **Wilcoxon–Mann–Whitney test**: We apply the `wilcox.test()` function.
+- **Median test**: We call our `median.test()` function to get a p-value based on median differences.
+
+The loop fills the vectors `p.t`, `p.wmw`, and `p.median` with the p-values from each method, allowing us to track their performance across all simulations.
+
+```{r eval=FALSE}
+mean(p.median < 0.05)
+mean(p.t < 0.05)
+mean(p.wmw < 0.05)
+```
+
+After running all the simulations, we calculate the power of each test by checking how often the p-value is below 0.05:
+
+- The **median test** had a power of **`r mean(p.median < 0.05)`**, meaning it rejected the null hypothesis in approximately `r sprintf('%.1f%%', mean(p.median < 0.05) * 100)` of the cases.
+
+- The **permutation t-test** showed a power of **`r mean(p.t < 0.05)`**, rejecting the null hypothesis in around `r sprintf('%.1f%%', mean(p.t < 0.05) * 100)` of the cases.
+
+- The **Wilcoxon–Mann–Whitney test** typically performed best, with a power of **`r mean(p.wmw < 0.05)`**, rejecting the null hypothesis `r sprintf('%.1f%%', mean(p.wmw < 0.05) * 100)` of the time.
+
+Overall, while the results may vary slightly with each run due to the randomness of simulations, the general trend observed is that the **Wilcoxon–Mann–Whitney test** often shows the highest power. The **median test** and the **permutation t-test** tend to perform similarly but may vary in power based on specific data characteristics and sampling variability.
+

@@ -367,21 +367,21 @@ each other. It works by assessing the null hypothesis that two groups
 come from the same distribution.</p>
 <div id="explanation-of-median.test-algorithm" class="section level2">
 <h2>Explanation of <code>median.test</code> Algorithm</h2>
-<p>The <code>median.test</code> function performs a permutation test to
-compare the medians of two samples, <code>x</code> and <code>y</code>.
-It first calculates the observed difference in medians. The combined
-data from both groups is shuffled for each of 1,000 permutations,
-splitting it back into two groups of the original sizes. The function
-computes the permuted difference in medians and counts how often this
-value is as extreme as the observed one. The p-value is determined as
-the proportion of these extreme cases relative to the total number of
-permutations, indicating the significance of the observed median
-difference.</p>
+<p>The <code>median.test</code> function helps determine if the medians
+of two sample groups are meaningfully different. It starts by finding
+the actual median difference between the groups. Next, it combines all
+the data and shuffles it a set number of times (1,000 by default). For
+each shuffle, it splits the data back into two new groups, calculates
+the new median difference, and counts how often this difference is as
+extreme as the original one. The function then calculates the p-value by
+comparing these counts to the total number of shuffles, showing how
+likely the observed difference could have happened by chance. Users can
+adjust the number of shuffles to make the test more or less precise.</p>
 <pre class="r"><code>#Question 1
 
 # function of median.test(x,y)
 
-median.test &lt;- function(x, y){
+median.test &lt;- function(x, y, n = 1000){
   # Check is the inputs are vector or not.
   stopifnot(&quot;the input of function should be a vector&quot; = is.vector(x))
   stopifnot(&quot;the input of function should be a vector&quot; = is.vector(y))
@@ -392,11 +392,10 @@ median.test &lt;- function(x, y){
   # Combine data for permutation
   combine &lt;- c(x, y)
   
-  num_permutations  = 1000
   extreme_count = 0
   
   # Permutation test loop
-  for (i in 1:num_permutations){
+  for (i in 1:n){
     shuffle &lt;- sample(combine)
     perm_stat &lt;- median(head(shuffle,length(x))) - median(tail(shuffle,length(y)))
     if (abs(perm_stat) &gt;= abs(observed_stat)){
@@ -405,10 +404,55 @@ median.test &lt;- function(x, y){
   }
   
   # Calculate p-value
-  p_value &lt;-  extreme_count / num_permutations
+  p_value &lt;-  extreme_count / n
   return(p_value)
 }</code></pre>
 </div>
+</div>
+<div id="question-2" class="section level1">
+<h1>Question 2:</h1>
+<p>To compare how well different statistical tests perform (the
+permutation t-test, the Wilcoxon–Mann–Whitney test, and our custom
+median test), we start by setting up the necessary components. We create
+empty vectors (<code>p.t</code>, <code>p.wmw</code>, and
+<code>p.median</code>) to store the p-values from each test across 1,000
+simulated runs. We set <code>n = 20</code> as the sample size for each
+group and use <code>delta = sqrt(3)/2</code> to shift one of the groups,
+creating a controlled difference to test the power of each method.</p>
+<p>In each of the 1,000 simulations, we generate two sets of data,
+<code>Y1</code> and <code>Y2</code>, from a <span class="math inline">\(t_3\)</span>-distribution, with <code>Y2</code>
+shifted by <code>delta</code> to simulate a real difference between the
+groups. For each run: - <strong>Permutation t-test</strong>: We use the
+<code>oneway_test()</code> function to get the p-value. -
+<strong>Wilcoxon–Mann–Whitney test</strong>: We apply the
+<code>wilcox.test()</code> function. - <strong>Median test</strong>: We
+call our <code>median.test()</code> function to get a p-value based on
+median differences.</p>
+<p>The loop fills the vectors <code>p.t</code>, <code>p.wmw</code>, and
+<code>p.median</code> with the p-values from each method, allowing us to
+track their performance across all simulations.</p>
+<pre class="r"><code>mean(p.median &lt; 0.05)
+mean(p.t &lt; 0.05)
+mean(p.wmw &lt; 0.05)</code></pre>
+<p>After running all the simulations, we calculate the power of each
+test by checking how often the p-value is below 0.05:</p>
+<ul>
+<li><p>The <strong>median test</strong> had a power of
+<strong>0.436</strong>, meaning it rejected the null hypothesis in
+approximately 43.6% of the cases.</p></li>
+<li><p>The <strong>permutation t-test</strong> showed a power of
+<strong>0.444</strong>, rejecting the null hypothesis in around 44.4% of
+the cases.</p></li>
+<li><p>The <strong>Wilcoxon–Mann–Whitney test</strong> typically
+performed best, with a power of <strong>0.539</strong>, rejecting the
+null hypothesis 53.9% of the time.</p></li>
+</ul>
+<p>Overall, while the results may vary slightly with each run due to the
+randomness of simulations, the general trend observed is that the
+<strong>Wilcoxon–Mann–Whitney test</strong> often shows the highest
+power. The <strong>median test</strong> and the <strong>permutation
+t-test</strong> tend to perform similarly but may vary in power based on
+specific data characteristics and sampling variability.</p>
 </div>
 
 
