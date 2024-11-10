@@ -1,41 +1,37 @@
 ---
 title: "HW2 Shen Ayashm"
-author: 
-  - Jiacheng Chen
-  - Sajjad Ayashm
+author:
+- Jiacheng Chen
+- Sajjad Ayashm
 date: "`r Sys.Date()`"
-output: html_document
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+
 ```
 
-# Question 1:
+## Question 1
 
-A permutation test is a non-parametric statistical test used to determine whether two distributions are significantly different from each other. It works by assessing the null hypothesis that two groups come from the same distribution.
+### Permutation Test
 
+A permutation test is a non-parametric method used to determine if two groups differ significantly without assuming any specific distribution. This test assesses whether an observed difference could have occurred by chance.
 
-## Explanation of `median.test` Algorithm
+### `median.test` Algorithm
 
-The `median.test` function helps determine if the medians of two sample groups are meaningfully different. It starts by finding the actual median difference between the groups. Next, it combines all the data and shuffles it a set number of times (1,000 by default). For each shuffle, it splits the data back into two new groups, calculates the new median difference, and counts how often this difference is as extreme as the original one. The function then calculates the p-value by comparing these counts to the total number of shuffles, showing how likely the observed difference could have happened by chance. Users can adjust the number of shuffles to make the test more or less precise.
+The `median.test` function helps determine if two groups differ in their medians. It calculates the observed median difference, then permutes the combined data multiple times (default: 1,000), generating new median differences each time. By counting how often these shuffled differences are as extreme as the original, we obtain a p-value that indicates the likelihood of the observed difference occurring by chance.
+
 
 ```{r}
-#Question 1
-
-# function of median.test(x,y)
-
 median.test <- function(x, y, n = 1000){
-  # Check is the inputs are vector or not.
-  stopifnot("the input of function should be a vector" = is.vector(x))
-  stopifnot("the input of function should be a vector" = is.vector(y))
   
-  # Calculate observed statistic
+  # Calculate observed statistic and combine data
   observed_stat <- median(x) - median(y)
-  
-  # Combine data for permutation
   combine <- c(x, y)
-  
+
   extreme_count = 0
   
   # Permutation test loop
@@ -54,10 +50,27 @@ median.test <- function(x, y, n = 1000){
 ```
 
 # Question 2:
-To compare how well different statistical tests perform (the permutation t-test, the Wilcoxon–Mann–Whitney test, and our custom median test), we start by setting up the necessary components. We create empty vectors (`p.t`, `p.wmw`, and `p.median`) to store the p-values from each test across 1,000 simulated runs. We set `n = 20` as the sample size for each group and use `delta = sqrt(3)/2` to shift one of the groups, creating a controlled difference to test the power of each method.
+
+## Question 2
+
+To evaluate the power of three statistical tests—the permutation t-test, Wilcoxon–Mann–Whitney (WMW) test, and our custom median test—we conducted 1,000 simulations. For each simulation, we generated two data sets from a \( t_3 \)-distribution with a small effect (`delta = sqrt(3)/2`), which introduced a controlled difference between groups.
+
+Each simulation used the three tests:
+- **Permutation t-test**: Calculated p-values with `oneway_test()`.
+- **Wilcoxon–Mann–Whitney test**: Used `wilcox.test()` to compute p-values.
+- **Median test**: Computed p-values using our `median.test()` function.
+
+### Results
+
+After running the simulations, we calculated each test’s power by tracking the proportion of p-values below 0.05:
+- The **Median test** had a power of about 44.2%.
+- The **Permutation t-test** showed approximately 40.8% power.
+- The **WMW test** had the highest power, at 52.5%.
+
+While the results may slightly vary with each run, the general trend shows that the WMW test has the highest power. The Median and Permutation t-tests performed similarly, with minor variation depending on data characteristics.
 
 
-```{r echo = FALSE, message=FALSE}
+```{r echo = FALSE, message=FALSE, warning=FALSE}
 # Load the 'coin' package for permutation tests
 library('coin')
 
@@ -85,26 +98,205 @@ for (i in 1:1000) {
 }
 ```
 
-In each of the 1,000 simulations, we generate two sets of data, `Y1` and `Y2`, from a \( t_3 \)-distribution, with `Y2` shifted by `delta` to simulate a real difference between the groups. For each run:
-- **Permutation t-test**: We use the `oneway_test()` function to get the p-value.
-- **Wilcoxon–Mann–Whitney test**: We apply the `wilcox.test()` function.
-- **Median test**: We call our `median.test()` function to get a p-value based on median differences.
 
-The loop fills the vectors `p.t`, `p.wmw`, and `p.median` with the p-values from each method, allowing us to track their performance across all simulations.
-
-```{r eval=FALSE}
+```{r eval=FALSE, echo=FALSE}
 mean(p.median < 0.05)
 mean(p.t < 0.05)
 mean(p.wmw < 0.05)
 ```
 
-After running all the simulations, we calculate the power of each test by checking how often the p-value is below 0.05:
 
-- The **median test** had a power of **`r mean(p.median < 0.05)`**, meaning it rejected the null hypothesis in approximately `r sprintf('%.1f%%', mean(p.median < 0.05) * 100)` of the cases.
 
-- The **permutation t-test** showed a power of **`r mean(p.t < 0.05)`**, rejecting the null hypothesis in around `r sprintf('%.1f%%', mean(p.t < 0.05) * 100)` of the cases.
+# Question 3:
 
-- The **Wilcoxon–Mann–Whitney test** typically performed best, with a power of **`r mean(p.wmw < 0.05)`**, rejecting the null hypothesis `r sprintf('%.1f%%', mean(p.wmw < 0.05) * 100)` of the time.
 
-Overall, while the results may vary slightly with each run due to the randomness of simulations, the general trend observed is that the **Wilcoxon–Mann–Whitney test** often shows the highest power. The **median test** and the **permutation t-test** tend to perform similarly but may vary in power based on specific data characteristics and sampling variability.
+In question 3, we assessed the power of three statistical tests—the Median test, Permutation t-test, and Wilcoxon–Mann–Whitney (WMW) test—across different distributions. We simulated data from seven distributions, each with a controlled effect (`delta`) to measure each test’s ability to detect differences. The power of each test, shown as the percentage of times it correctly identifies a difference (p-value < 0.05), is displayed in Figure 1, offering a comparison of each test’s effectiveness across distributions.
 
+As shown in **Figure 1**, the WMW test generally performs best, especially for uniform and normal distributions, where it consistently demonstrates high power. The Permutation t-test also performs well, often close to the WMW test in terms of power. The Median test’s effectiveness varies more; it performs well for the exponential distribution but shows lower power for distributions like logistic and t5. Overall, the WMW test stands out as a reliable choice across most data types, though each test has strengths depending on the distribution.
+
+
+
+```{r echo=FALSE, message=FALSE, eval = FALSE}
+library(extraDistr)
+
+n <- 20
+delta <- sqrt(3)/2
+
+distribution_list <- list(
+  exp = function(n) rexp(n, rate = 1),
+  t3 = function(n) rt(n, df = 3),
+  laplace = function(n) rlaplace(n, mu = 0, sigma = 1),
+  t5 = function(n) rt(n, df = 5),
+  logistic = function(n) rlogis(n, location = 0, scale = 1),
+  normal = function(n) rnorm(n, mean = 0, sd = 1),
+  uniform = function(n) runif(n, min = 0, max = 1)
+)
+
+
+# Initialize matrices to store p-values for each test and distribution
+p_values_t <- matrix(0, nrow = 1000, ncol = length(distribution_list))
+p_values_wmw <- matrix(0, nrow = 1000, ncol = length(distribution_list))
+p_values_median <- matrix(0, nrow = 1000, ncol = length(distribution_list))
+colnames(p_values_t) <- colnames(p_values_wmw) <- colnames(p_values_median) <- names(distribution_list)
+
+# Run the simulations
+for (i in 1:1000) {
+  for (dist_name in names(distribution_list)) {
+    # Generate samples
+    Y1 <- distribution_list[[dist_name]](n)
+    Y2 <- distribution_list[[dist_name]](n) + delta
+    
+    # Combine samples and create group indicator
+    X <- factor(c(rep("A", n), rep("B", n)))
+    Y <- c(Y1, Y2)
+    
+    # Perform each test and store p-values
+    p_values_t[i, dist_name] <- pvalue(oneway_test(Y ~ X, distribution = approximate(nresample = 9999)))
+    p_values_wmw[i, dist_name] <- wilcox.test(Y1, Y2, exact = TRUE)$p.value
+    p_values_median[i, dist_name] <- median.test(Y1, Y2, n)
+  }
+}
+
+# Calculate power (proportion of p-values below alpha) for each test and distribution
+power_t <- colMeans(p_values_t < 0.05) * 100
+power_wmw <- colMeans(p_values_wmw < 0.05) * 100
+power_median <- colMeans(p_values_median < 0.05) * 100
+
+# Combine power results into a data frame for plotting
+power_data <- data.frame(
+  Distribution = rep(names(distribution_list), 3),
+  Power = c(power_t, power_wmw, power_median),
+  Test = factor(rep(c("Permutation t-test", "WMW test", "Median test"), each = length(distribution_list)))
+)
+
+# Plot the results with horizontal bars
+library(ggplot2)
+ggplot(power_data, aes(x = Distribution, y = Power, fill = Test)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Power of Different Tests across Distributions",
+       x = "Distribution",
+       y = "Power (%)") +
+  scale_fill_manual(values = c("gray4", "gray37", "gray83")) +
+  theme_minimal() +
+  coord_flip() # This flips the axes, making the bars horizontal
+
+```
+
+
+
+
+
+
+
+# Question 4:
+
+In question 4, we examine how often each test incorrectly detects a difference when none exists, known as the Type I error rate. To do this, we set `delta` to zero, meaning there is no real difference between the two groups. We then track how frequently each test gives a p-value below 0.05, which would indicate a false positive. 
+
+As shown in **Figure 2**, all three tests generally maintain Type I error rates close to the 5% significance level, with slight variation across distributions. The WMW test shows a slightly higher error rate for some distributions, like normal and exponential, compared to the other tests. Overall, each test appears reliable in controlling Type I error, though the WMW test exhibits a bit more variation depending on the distribution.
+
+
+```{r eval = FALSE, echo=FALSE, message=FALSE}
+
+library(extraDistr)
+library(coin)
+
+n <- 20
+delta_new <- 0
+
+distribution_list_new <- list(
+  exp = function(n) rexp(n, rate = 1),
+  t3 = function(n) rt(n, df = 3),
+  laplace = function(n) rlaplace(n, mu = 0, sigma = 1),
+  t5 = function(n) rt(n, df = 5),
+  logistic = function(n) rlogis(n, location = 0, scale = 1),
+  normal = function(n) rnorm(n, mean = 0, sd = 1),
+  uniform = function(n) runif(n, min = 0, max = 1)
+)
+
+
+# Initialize new matrices to store p-values for each test and distribution
+p_values_t_new <- matrix(0, nrow = 1000, ncol = length(distribution_list))
+p_values_wmw_new <- matrix(0, nrow = 1000, ncol = length(distribution_list))
+p_values_median_new <- matrix(0, nrow = 1000, ncol = length(distribution_list))
+colnames(p_values_t_new) <- colnames(p_values_wmw_new) <- colnames(p_values_median_new) <- names(distribution_list_new)
+
+# Run the simulations
+for (i in 1:1000) {
+  for (dist_name in names(distribution_list_new)) {
+    # Generate samples
+    Y1 <- distribution_list_new[[dist_name]](n)
+    Y2 <- distribution_list_new[[dist_name]](n) + delta_new
+    
+    # Combine samples and create group indicator
+    X <- factor(c(rep("A", n), rep("B", n)))
+    Y <- c(Y1, Y2)
+    
+    # Perform each test and store p-values
+    p_values_t_new[i, dist_name] <- pvalue(oneway_test(Y ~ X, distribution = approximate(nresample = 9999)))
+    p_values_wmw_new[i, dist_name] <- wilcox.test(Y1, Y2, exact = TRUE)$p.value
+    p_values_median_new[i, dist_name] <- median.test(Y1, Y2, n)
+  }
+}
+
+# Calculate power (proportion of p-values below alpha) for each test and distribution
+power_t_new <- colMeans(p_values_t_new < 0.05) * 100
+power_wmw_new <- colMeans(p_values_wmw_new < 0.05) * 100
+power_median_new <- colMeans(p_values_median_new < 0.05) * 100
+
+# Combine power results into a data frame for plotting
+power_data_new <- data.frame(
+  Distribution_new = rep(names(distribution_list_new), 3),
+  Power_new = c(power_t_new, power_wmw_new, power_median_new),
+  Test_new = factor(rep(c("Permutation t-test", "WMW test", "Median test"), each = length(distribution_list_new)))
+)
+
+# Plot the results with horizontal bars
+library(ggplot2)
+ggplot(power_data_new, aes(x = Distribution_new, y = Power_new, fill = Test_new)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  labs(title = "Type I Errors across Distributions",
+       x = "Distribution",
+       y = "Type I Error (%)") +
+  scale_fill_manual(values = c("gray4", "gray37", "gray83")) +
+  theme_minimal() +
+  coord_flip() # This flips the axes, making the bars horizontal
+
+```
+
+\begin{figure}[h!]
+    \centering
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pics/Q3.png}
+        \caption{Power of Different Tests across Distributions}
+    \end{minipage}\hfill
+    \begin{minipage}{0.45\textwidth}
+        \centering
+        \includegraphics[width=\linewidth]{pics/Q4.png}
+        \caption{Type I Errors across Distributions}
+    \end{minipage}
+\end{figure}
+
+# Question 5
+
+## i. Power Comparison
+
+The power of each test varies based on the distribution’s tail behavior. In heavy-tailed distributions (e.g., Laplace and exponential), the Median and WMW tests generally show higher power than the Permutation t-test, with the WMW test slightly outperforming the Median test. For light-tailed distributions (e.g., normal), the Permutation t-test has the highest power, while the Median test typically shows the lowest.
+
+## ii. Type I Error Comparison
+
+Type I error rates also depend on the distribution’s tail behavior. Heavy-tailed distributions tend to produce higher Type I errors. Among the three tests, the Median test consistently maintains the lowest Type I error rates, especially in the normal distribution, making it a conservative choice.
+
+## Recommendations
+
+- **Maximizing Power**: The Median test is recommended for heavy-tailed distributions, but the WMW test may be preferable if power is prioritized.
+- **Minimizing Type I Error**: The Median test is recommended for its low Type I error rates across distributions, making it a reliable choice for error control.
+
+In summary, the Median test is advantageous for heavy-tailed distributions and when controlling Type I error, while the WMW test is suitable when prioritizing power.
+
+
+# Question 6:
+
+We completed this homework as a team, working closely together on each part of the project. From developing code and running simulations to analyzing results and interpreting our findings, we both contributed equally along the way. We discussed our approach at every step to ensure accuracy and understanding, so each analysis reflects our combined efforts.
+
+We also worked together on writing and reviewing the report, aiming to make the explanations as clear and straightforward as possible. Overall, this homework is truly a product of our collaboration and shared dedication.
